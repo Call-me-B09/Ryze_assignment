@@ -92,3 +92,12 @@ exports.rollback = async (req, res) => {
         res.status(500).json({ error: 'Rollback failed' });
     }
 };
+
+exports.clearHistory = async (req, res) => {
+    try {
+        await Generation.deleteMany({});
+        res.json({ message: 'History cleared' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to clear history' });
+    }
+};

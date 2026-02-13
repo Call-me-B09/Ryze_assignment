@@ -6,5 +6,6 @@ router.post('/generate', generationController.generate);
 router.get('/versions', generationController.getVersions);
 router.get('/versions/:version', generationController.getVersion);
 router.post('/rollback', generationController.rollback);
+router.delete('/generations', generationController.clearHistory);
 
 module.exports = router;
