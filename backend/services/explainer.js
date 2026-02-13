@@ -1,8 +1,5 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { generateContentWithRetry } = require('../utils/geminiHelper');
 require('dotenv').config();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 const explainer = async (code, plan) => {
     const systemInstruction = `
@@ -16,9 +13,9 @@ Output:
 - A concise paragraph explaining what was built and why. usage of specific components.
 `;
 
-    const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: systemInstruction + "\n\nCode:\n" + code + "\n\nPlan:\n" + JSON.stringify(plan) }] }]
-    });
+    const promptParts = [{ text: systemInstruction + "\n\nCode:\n" + code + "\n\nPlan:\n" + JSON.stringify(plan) }];
+
+    const result = await generateContentWithRetry(promptParts);
 
     const response = result.response;
     return response.text();

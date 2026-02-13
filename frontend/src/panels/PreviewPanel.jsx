@@ -1,49 +1,80 @@
 import React, { useMemo } from 'react';
 import * as UI from '../components/ui';
 import * as Babel from '@babel/standalone';
+import * as Lucide from 'lucide-react';
 
 const LiveRenderer = ({ code }) => {
     const Component = useMemo(() => {
         if (!code) return null;
 
         try {
-            // 1. Transform JSX to JS using Babel
-            const transformedCode = Babel.transform(code, {
-                presets: ['react'],
-                filename: 'preview.jsx',
-            }).code;
-
-            // 2. Prepare scope
-            const scope = { ...UI, React };
+            // 1. Prepare Scope (Includes React, UI Components, and Lucide Icons)
+            const scope = {
+                ...UI,
+                ...Lucide,
+                React,
+                useState: React.useState,
+                useEffect: React.useEffect,
+                useContext: React.useContext,
+                useReducer: React.useReducer,
+                useCallback: React.useCallback,
+                useMemo: React.useMemo,
+                useRef: React.useRef,
+                useImperativeHandle: React.useImperativeHandle,
+                useLayoutEffect: React.useLayoutEffect,
+                useDebugValue: React.useDebugValue,
+            };
             const scopeKeys = Object.keys(scope);
             const scopeValues = Object.values(scope);
 
-            // 3. Wrap in a function that returns the component
-            // Note: Babel transform adds "use strict"; and often converts to 
-            // strict mode code. We need to handle the return statement.
+            // 2. Pre-process Code
+            // Remove imports
+            let processedCode = code.replace(/import\s+.*?;/gs, '');
 
-            // A simple way is to wrap the original code in a function component structure
-            // before transforming, OR handle the transformed output.
+            // Determine Component Name for Return
+            let componentName = 'GeneratedComponent';
 
-            // Let's try wrapping the raw code in a functional component string first
-            // This is safer because Babel handles the return logic naturally
-            const wrappedCode = `
-        const GeneratedComponent = () => {
-           return (
-             <>
-               ${code}
-             </>
-           );
-        };
-      `;
+            // Handle "export default"
+            if (processedCode.includes('export default')) {
+                // Case: export default function Name() {}
+                if (processedCode.match(/export\s+default\s+function\s+\w+/)) {
+                    processedCode = processedCode.replace(/export\s+default\s+function\s+(\w+)/, (match, name) => {
+                        componentName = name;
+                        return `const ${name} = function ${name}`;
+                    });
+                }
+                // Case: export default function() {}
+                else if (processedCode.match(/export\s+default\s+function\s*\(/)) {
+                    processedCode = processedCode.replace(/export\s+default\s+function/, 'const GeneratedComponent = function');
+                    componentName = 'GeneratedComponent';
+                }
+                // Case: export default Name
+                else {
+                    const match = processedCode.match(/export\s+default\s+(\w+)/);
+                    if (match) {
+                        componentName = match[1];
+                        // Remove the export statement entirely
+                        processedCode = processedCode.replace(/export\s+default\s+(\w+);?/, '');
+                    }
+                }
+            } else {
+                // Case: Raw JSX (Fragments) or unknown structure
+                // Wrap in a functional component to be safe
+                processedCode = `const GeneratedComponent = () => (<>${processedCode}</>);`;
+                componentName = 'GeneratedComponent';
+            }
 
-            const transformedWrapped = Babel.transform(wrappedCode, {
+            // 3. Transform with Babel
+            const transformedCode = Babel.transform(processedCode, {
                 presets: ['react'],
                 filename: 'preview.jsx',
             }).code;
 
-            // 4. Execute
-            const finalCode = `${transformedWrapped}; return GeneratedComponent;`;
+            // 4. Construct Final Function Body
+            // Append the return statement for the function constructor
+            const finalCode = `${transformedCode}; return ${componentName};`;
+
+            // 5. Execute
             const func = new Function(...scopeKeys, finalCode);
             const GeneratedComponent = func(...scopeValues);
 
@@ -52,9 +83,9 @@ const LiveRenderer = ({ code }) => {
         } catch (err) {
             console.error("Preview Error:", err);
             return () => (
-                <div className="p-4 text-red-500 bg-red-50 border border-red-200 rounded-lg">
+                <div className="p-4 text-red-500 bg-red-50 border border-red-200 rounded-lg overflow-auto">
                     <h3 className="font-bold">Preview Error</h3>
-                    <p className="text-sm font-mono mt-2 whitespace-pre-wrap">{err.message}</p>
+                    <p className="text-xs font-mono mt-2 whitespace-pre-wrap">{err.message}</p>
                 </div>
             );
         }

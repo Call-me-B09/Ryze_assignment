@@ -1,51 +1,58 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { generateContentWithRetry } = require('../utils/geminiHelper');
 require('dotenv').config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
-const generator = async (plan) => {
+const generator = async (plan, previousCode = null) => {
   const systemInstruction = `
-You are a React Code Generator Agent. Your job is to convert a structured UI plan into valid React component code.
+You are a senior frontend engineer.
 
-Allowed Components:
-- Navbar
-- Sidebar
-- Table
-- Card
-- Button
-- Input
-- Modal
+MODE: ${previousCode ? "EDIT / UPDATE" : "NEW GENERATION"}
 
-Rules:
-1. Output ONLY the React JSX code. No imports, no default exports, just the component tree (fragments are allowed).
-2. Do NOT use <div>, <span>, or any HTML tags. ONLY use the allowed matching components.
-3. Do NOT generate CSS or Tailwind classes.
-4. Follow the structure defined in the plan strictly.
+${previousCode ? `
+YOUR TASK:
+1. You will be given a PLAN (JSON) and PREVIOUS CODE (JSX).
+2. You must APPLY changes to the PREVIOUS CODE based on the PLAN and User Prompt.
+3. KEEP existing functionality, layout, and components that are NOT part of the requested change.
+4. DO NOT rewrite the entire application from scratch unless the plan explicitly says "Redesign everything".
+5. MERGE new features into the existing structure.
+` : `
+YOUR TASK:
+1. Generate professional React UI using a fixed deterministic component library.
+2. Follow strict layout hierarchy actions.
+`}
 
-Example Input Plan:
-{
-  "layout": "dashboard",
-  "components": [
-    { "type": "Button", "props": { "label": "Submit" } }
-  ]
-}
+ALLOWED COMPONENTS:
+Navbar, Sidebar, Card, Input, Button, Table, Modal
 
-Example Output:
-<>
-    <Button label="Submit" />
-</>
+STRICT LAYOUT RULES:
+- Root: Navbar, Sidebar
+- Main: ONE top-level Card
+- Sections: Card (max depth 2)
+- Content: Input, Button, Table inside Cards
+
+CRITICAL:
+- Output ONLY valid JSX.
+- No markdown or comments.
+- No "import React".
 `;
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: systemInstruction + "\n\nPlan:\n" + JSON.stringify(plan) }] }]
-  });
+  const userPrompt = previousCode
+    ? `PLAN:\n${JSON.stringify(plan)}\n\nPREVIOUS CODE:\n${previousCode}\n\nUSER PROMPT/INSTRUCTION: Edit the code above to match the plan.`
+    : `Here is the plan for the UI:\n${JSON.stringify(plan)}`;
+
+  const promptParts = [{ text: systemInstruction + "\n\n" + userPrompt }];
+
+  const result = await generateContentWithRetry(promptParts);
+
 
   const response = result.response;
   let text = response.text();
 
   // Clean up markdown
+  // Clean up markdown
   text = text.replace(/```jsx/g, "").replace(/```javascript/g, "").replace(/```/g, "").trim();
+
+  // Ensure no "import React" (as it's provided by preview scope) but ALLOW other imports
+  text = text.replace(/import React.*?;/g, "");
 
   return text;
 };

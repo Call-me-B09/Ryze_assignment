@@ -212,7 +212,9 @@ function App() {
   const handleNewProject = async () => {
     if (window.confirm("Are you sure? This will delete all history and start a new project.")) {
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/generations`, { method: 'DELETE' });
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/generations`, { method: 'DELETE' });
+        if (!res.ok) throw new Error("Failed to delete history on backend");
+
         setVersions([]);
         setCurrentVersionId(null);
         setCode("");
@@ -290,7 +292,7 @@ function App() {
 
         {panels.code.visible && (
           <div style={{ width: `${panels.code.width}%` }} className="flex flex-col h-full min-w-[200px] border-r border-gray-800 z-0 relative group">
-            <CodePanel code={code} onChange={() => { }} />
+            <CodePanel code={code} onChange={(newCode) => setCode(newCode)} />
             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity z-50">
               <button onClick={() => togglePanel('code')} className="bg-black/50 hover:bg-red-500/80 text-white rounded-md p-1 backdrop-blur-sm transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>

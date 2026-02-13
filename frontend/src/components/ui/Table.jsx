@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function Table({ columns = [], data = [] }) {
+export function Table({ columns = [], data = [], theme }) {
     // Mock data generation if none provided
     const displayData = data.length > 0 ? data : [
         { id: 1, col1: "Data 1", col2: "Data 2", col3: "Data 3" },
@@ -8,7 +8,7 @@ export function Table({ columns = [], data = [] }) {
     ];
 
     return (
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className={`overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 ${theme === 'dark' ? 'dark' : ''}`}>
             <table className="w-full text-sm text-left">
                 <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                     <tr>

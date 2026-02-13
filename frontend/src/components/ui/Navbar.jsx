@@ -1,8 +1,8 @@
 import React from 'react';
 
-export function Navbar({ logo = "App", links = ["Home", "About", "Contact"] }) {
+export function Navbar({ logo = "App", links = ["Home", "About", "Contact"], theme }) {
     return (
-        <nav className="w-full h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-6">
+        <nav className={`w-full h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-6 ${theme === 'dark' ? 'dark' : ''}`}>
             <div className="font-bold text-xl text-gray-900 dark:text-gray-100">{logo}</div>
             <div className="flex gap-6">
                 {links.map((link) => (

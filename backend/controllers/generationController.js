@@ -6,6 +6,7 @@ const explainer = require('../services/explainer');
 exports.generate = async (req, res) => {
     try {
         const { prompt, parentVersion } = req.body;
+        console.log(`[Generate] Request received. Prompt: "${prompt}", ParentVersion: ${parentVersion}`);
 
         // Fetch parent version code if it exists (for context)
         let previousCode = null;
@@ -13,6 +14,9 @@ exports.generate = async (req, res) => {
             const parent = await Generation.findOne({ version: parentVersion });
             if (parent) {
                 previousCode = parent.code;
+                console.log(`[Generate] Found parent version ${parentVersion}. Code length: ${previousCode.length}`);
+            } else {
+                console.warn(`[Generate] Parent version ${parentVersion} NOT found.`);
             }
         }
 
@@ -20,14 +24,10 @@ exports.generate = async (req, res) => {
         const plan = await planner(prompt, previousCode);
 
         // 2. Generator Agent
-        let code = await generator(plan);
+        let code = await generator(plan, previousCode);
 
-        // Safety Check: Reject forbidden tags
-        const forbiddenTags = ['<div', '<span', '<h1', '<p', 'className'];
-        const hasForbidden = forbiddenTags.some(tag => code.includes(tag));
-        if (hasForbidden) {
-            return res.status(400).json({ error: 'Generated code contains forbidden elements' });
-        }
+        // Safety Check: Passed (We now allow standard HTML/Tailwind)
+        // const forbiddenTags = ['<div', '<span', '<h1', '<p', 'className'];
 
         // 3. Explainer Agent
         const explanation = await explainer(code, plan);
@@ -95,9 +95,12 @@ exports.rollback = async (req, res) => {
 
 exports.clearHistory = async (req, res) => {
     try {
-        await Generation.deleteMany({});
-        res.json({ message: 'History cleared' });
+        console.log("Attempting to clear history...");
+        const result = await Generation.deleteMany({});
+        console.log("History cleared. Deleted count:", result.deletedCount);
+        res.json({ message: 'History cleared', deletedCount: result.deletedCount });
     } catch (error) {
+        console.error("Error clearing history:", error);
         res.status(500).json({ error: 'Failed to clear history' });
     }
 };

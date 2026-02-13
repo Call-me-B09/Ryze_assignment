@@ -1,49 +1,63 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { generateContentWithRetry } = require('../utils/geminiHelper');
 require('dotenv').config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
 const planner = async (prompt, previousCode = null) => {
-  const systemInstruction = `
-You are a UI Planner Agent. Your job is to create a structured JSON plan for a React interface based on a user prompt.
+  const systemInstruction = previousCode
+    ? `
+You are an expert UI/UX Architect. Your job is to analyze the user request and UPDATE the existing React application structure.
 
-Allowed Components:
-- Navbar
-- Sidebar
-- Table (props: columns)
-- Card
-- Button
-- Input
-- Modal
+### Objectives
+1. **Analyze Changes**: Compare the User Prompt with the Previous Version. Identify what needs to be added, removed, or modified.
+2. **Preserve Structure**: Keep the existing layout (Navbar/Sidebar/Main Card) unless explicitly asked to change it.
+3. **Plan Update**: Output a JSON plan that reflects the *new* state of the application after changes.
 
-Rules:
-1. Return ONLY valid JSON. No markdown formatting.
-2. Do not use any components other than the allowed list.
-3. Structure the response with "layout" and "components" keys.
-4. If "previousCode" is provided, try to respect the existing structure unless the prompt explicitly asks for a change.
+### Rules
+1. Return **ONLY** a JSON object (no markdown).
+2. Structure:
+   {
+     "layout": "description of existing layout + changes",
+     "components": [
+       { "name": "Sidebar", "description": "Navigation links..." },
+       { "name": "Card", "description": "Main container..." },
+       // List ALL components needed for the new version
+     ],
+     "change_strategy": "Briefly explain what is being changed (e.g. 'Adding a new button to the main card')"
+   }
+3. DO NOT suggest standard HTML elements (div, span, etc) or CSS styling. Focus on component composition and hierarchy.
+`
+    : `
+You are an expert UI/UX Architect. Your job is to analyze the user request and create a detailed structure for a React application using ONLY the allowed component library.
 
-Example Output:
-{
-  "layout": "dashboard",
-  "components": [
-    { "type": "Navbar" },
-    { "type": "Sidebar" },
-    {
-      "type": "Table",
-      "props": { "columns": ["Name", "Email", "Role"] }
-    }
-  ]
-}
+### Objectives
+1. **Understand Intent**: Analyze what the user wants.
+2. **Plan Layout**: Suggest a layout using the allowed components (Button, Card, Input, Table, Modal, Sidebar, Navbar) observing STRICT hierarchy rules:
+   - Root: Navbar, Sidebar.
+   - Main Content: Wrapped in ONE top-level Card.
+   - Sections: Inside the main Card, use child Cards for sections.
+   - Content: Input, Button, Table inside section Cards.
+3. **Detail Components**: List necessary components from the allowed list.
+
+### Rules
+1. Return **ONLY** a JSON object (no markdown).
+2. Structure:
+   {
+     "layout": "description of layout with strict hierarchy (Navbar/Sidebar -> Main Card -> Section Cards)",
+     "components": [
+       { "name": "Sidebar", "description": "Navigation links..." },
+       { "name": "Card", "description": "Main container..." }
+     ],
+     "suggestion": "Advice on grouping and avoiding over-nesting (max 2 levels deep for Cards)"
+   }
+3. DO NOT suggest standard HTML elements (div, span, etc) or CSS styling. Focus on component composition and hierarchy.
 `;
 
   const fullPrompt = previousCode
     ? `User Prompt: ${prompt}\n\nPrevious Version Code:\n${previousCode}`
     : `User Prompt: ${prompt}`;
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: systemInstruction + "\n\n" + fullPrompt }] }]
-  });
+  const promptParts = [{ text: systemInstruction + "\n\n" + fullPrompt }];
+
+  const result = await generateContentWithRetry(promptParts);
 
   const response = result.response;
   let text = response.text();
