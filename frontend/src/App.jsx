@@ -32,7 +32,9 @@ function App() {
 
     // Simulate network delay
     setTimeout(() => {
-      const response = mockGenerate(prompt);
+      // Calculate next version number (1-based index)
+      const nextVersionNumber = versions.length + 1;
+      const response = mockGenerate(prompt, nextVersionNumber);
 
       // Update state
       const newCode = response.code;
@@ -87,9 +89,6 @@ function App() {
 
     const { startX, leftKey, rightKey, startLeftWidth, startRightWidth } = resizingRef.current;
 
-    // Ensure we are operating with updated values if needed, but refs/state sync is tricky here.
-    // We rely on startLeftWidth captured at mouse down + delta.
-
     const containerWidth = containerRef.current.clientWidth;
     const deltaPixels = e.clientX - startX;
     const deltaPercent = (deltaPixels / containerWidth) * 100;
@@ -135,15 +134,6 @@ function App() {
         // Show panel: take space from others
         const share = prev[key].width > 0 ? prev[key].width : 20; // Default restore width
         const totalVisWidth = otherKeys.reduce((sum, k) => sum + prev[k].width, 0);
-
-        // If totalVisWidth is 0 (shouldn't happen if we strictly maintain widths), handle it
-        // Or simplified: just normalize everything after insertion
-
-        // Simpler approach: give it 'share', scale others down
-        // If others sum to 100, and we add 20, we need to normalize (others become 80).
-        // scale = (100 - share) / 100 (if total was 100)
-
-        // Actually, we should just normalize everything to 100% at the end.
 
         const newPanels = { ...prev };
         newPanels[key] = { ...prev[key], visible: true, width: share };
@@ -234,7 +224,7 @@ function App() {
 
         {panels.code.visible && (
           <div style={{ width: `${panels.code.width}%` }} className="flex flex-col h-full min-w-[200px] border-r border-gray-800 z-0 relative group">
-            <CodePanel code={code} onChange={setCode} />
+            <CodePanel code={code} onChange={() => { }} />
             <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity z-50">
               <button onClick={() => togglePanel('code')} className="bg-black/50 hover:bg-red-500/80 text-white rounded-md p-1 backdrop-blur-sm transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -267,9 +257,12 @@ function App() {
       </main>
 
       {/* Footer: Versions */}
-      <footer className="h-12 border-t border-gray-800 bg-gray-950 z-20">
+      <footer className="h-32 border-t border-gray-800 bg-gray-950 z-20">
         <VersionPanel
-          versions={versions}
+          versions={versions.map(v => ({
+            ...v,
+            timestamp: v.createdAt ? v.createdAt.toLocaleTimeString() : (v.timestamp || "Just now")
+          }))}
           currentVersionId={currentVersionId}
           onRestore={handleRestoreVersion}
         />
