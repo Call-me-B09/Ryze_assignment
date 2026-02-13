@@ -3,7 +3,7 @@ import { ChatPanel } from './panels/ChatPanel';
 import { CodePanel } from './panels/CodePanel';
 import { PreviewPanel } from './panels/PreviewPanel';
 import { VersionPanel } from './panels/VersionPanel';
-import { mockGenerate } from './mock/mockAgent';
+// import { mockGenerate } from './mock/mockAgent';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -24,38 +24,82 @@ function App() {
   const containerRef = React.useRef(null);
   const resizingRef = React.useRef(null);
 
+  // Load versions on mount
+  React.useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL}/versions`)
+      .then(res => res.json())
+      .then(data => {
+        const formattedVersions = data.map(v => ({
+          id: v._id,
+          version: v.version,
+          timestamp: new Date(v.createdAt).toLocaleTimeString(),
+          code: v.code,
+          messages: [{ role: 'user', content: v.prompt }, { role: 'ai', content: v.explanation }], // Reconstruct chat history roughly
+          description: v.prompt
+        }));
+        setVersions(formattedVersions);
+        // Do not auto-load the latest version code/messages
+        // if (formattedVersions.length > 0) {
+        //   const lastVersion = formattedVersions[formattedVersions.length - 1];
+        //   setCurrentVersionId(lastVersion.id);
+        //   setCode(lastVersion.code);
+        //   setMessages(prev => [...prev, ...lastVersion.messages]);
+        // }
+      })
+      .catch(err => console.error("Failed to load versions:", err));
+  }, []);
+
   const handleSendMessage = async (prompt) => {
     // Add user message
     const userMsg = { role: 'user', content: prompt };
     setMessages(prev => [...prev, userMsg]);
     setIsTyping(true);
 
-    // Simulate network delay
-    setTimeout(() => {
-      // Calculate next version number (1-based index)
-      const nextVersionNumber = versions.length + 1;
-      const response = mockGenerate(prompt, nextVersionNumber);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          parentVersion: currentVersionId ? versions.find(v => v.id === currentVersionId)?.version : null
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Generation failed');
+      }
+
+      const data = await response.json();
 
       // Update state
-      const newCode = response.code;
-      const aiMsg = { role: 'ai', content: response.explanation };
+      const newCode = data.code;
+      const aiMsg = { role: 'ai', content: data.explanation };
 
       setCode(newCode);
       setMessages(prev => [...prev, aiMsg]);
-      setIsTyping(false);
 
       // Save version
       const newVersion = {
-        id: Date.now(),
-        timestamp: new Date().toLocaleTimeString(),
+        id: data._id, // Use MongoDB ID
+        version: data.version,
+        timestamp: new Date(data.createdAt).toLocaleTimeString(),
         code: newCode,
         messages: [...messages, userMsg, aiMsg],
-        description: prompt
+        description: prompt,
+        parentVersionId: data.parentVersion // Store parent version for branching UI?
       };
 
       setVersions(prev => [...prev, newVersion]);
       setCurrentVersionId(newVersion.id);
-    }, 1500);
+
+    } catch (error) {
+      console.error("Error generating UI:", error);
+      setMessages(prev => [...prev, { role: 'ai', content: "Sorry, I encountered an error generating the UI. Please try again." }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleRestoreVersion = (versionId) => {
