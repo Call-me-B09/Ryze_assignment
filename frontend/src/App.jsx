@@ -3,9 +3,11 @@ import { ChatPanel } from './panels/ChatPanel';
 import { CodePanel } from './panels/CodePanel';
 import { PreviewPanel } from './panels/PreviewPanel';
 import { VersionPanel } from './panels/VersionPanel';
+import LandingPage from './LandingPage';
 // import { mockGenerate } from './mock/mockAgent';
 
 function App() {
+  const [showLanding, setShowLanding] = useState(true);
   const [messages, setMessages] = useState([
     { role: 'ai', content: "Hi! I'm your AI UI Architect. Describe the interface you want to build, and I'll generate the React code for you." }
   ]);
@@ -224,6 +226,10 @@ function App() {
       }
     }
   };
+
+  if (showLanding) {
+    return <LandingPage onStart={() => setShowLanding(false)} />;
+  }
 
   return (
     <div className="h-screen w-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans overflow-hidden selection:bg-blue-500/30">
