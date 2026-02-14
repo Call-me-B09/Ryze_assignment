@@ -24,7 +24,7 @@ export function Navbar({ children, logo = "App", theme = "dark" }) {
             alignItems: "center",
             padding: "16px 24px",
             borderBottom: `1px solid ${t.border}`,
-            background: t.background,
+            background: t.navSurface, // Updated to user specific nav surface
             boxSizing: "border-box",
             color: t.text
         }}>

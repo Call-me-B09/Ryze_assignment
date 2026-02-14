@@ -32,7 +32,7 @@ export function Sidebar({ children, items, theme = "dark" }) {
             gap: "8px",
             padding: "16px",
             boxSizing: "border-box",
-            background: t.background,
+            background: t.sidebarSurface, // Updated to specific sidebar surface
             height: "100%",
             borderRight: `1px solid ${t.border}`
         }}>

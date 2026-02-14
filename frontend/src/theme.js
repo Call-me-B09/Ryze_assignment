@@ -1,39 +1,72 @@
 export const themes = {
-
     dark: {
-        background: "#020617",
-        surface: "#0f172a",
-        border: "#1e293b",
-        text: "#ffffff",
-        primary: "#7c3aed",
-        secondary: "#334155",
-        accent: "#06b6d4",
-        neutral: "#475569",
-        textSecondary: "#94a3b8"
-    },
-
-    light: {
-        background: "#ffffff",
-        surface: "#f8fafc",
-        border: "#e2e8f0",
-        text: "#020617",
-        primary: "#2563eb",
-        secondary: "#e2e8f0",
-        accent: "#0891b2",
+        appBackground: "#0B0F19",
+        navSurface: "#121826",
+        sidebarSurface: "#121826",
+        cardPrimary: "#121826",
+        cardSecondary: "#1B2435",
+        modalSurface: "#242F45",
+        inputSurface: "#111827",
+        border: "#2A3447",
+        text: "#E5E7EB",
+        textSecondary: "#9CA3AF",
+        primary: "#6366f1",
+        secondary: "#1B2435", // Fallback
+        accent: "#8b5cf6",
         neutral: "#64748b",
-        textSecondary: "#64748b"
+        shadowSm: "0 1px 2px 0 rgb(0 0 0 / 0.3)",
+        shadowMd: "0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3)",
+        shadowLg: "0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3)",
+        radius: "12px",
+        // Backward compatibility mappings if needed, but we will update components
+        background: "#0B0F19",
+        surface: "#121826",
+        card: "#121826"
     },
-
+    light: {
+        appBackground: "#F8FAFC",
+        navSurface: "#FFFFFF",
+        sidebarSurface: "#F1F5F9",
+        cardPrimary: "#FFFFFF",
+        cardSecondary: "#F1F5F9",
+        modalSurface: "#E2E8F0",
+        inputSurface: "#FFFFFF",
+        border: "#CBD5E1",
+        text: "#0F172A",
+        textSecondary: "#475569",
+        primary: "#2563eb",
+        secondary: "#F1F5F9",
+        accent: "#8b5cf6",
+        neutral: "#9CA3AF",
+        shadowSm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        shadowMd: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.06)",
+        shadowLg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.05)",
+        radius: "12px",
+        background: "#F8FAFC",
+        surface: "#FFFFFF",
+        card: "#FFFFFF"
+    },
     ocean: {
-        background: "#020617",
-        surface: "#0c4a6e",
-        border: "#0369a1",
-        text: "#e0f2fe",
-        primary: "#0284c7",
+        appBackground: "#0c4a6e",
+        navSurface: "#075985",
+        sidebarSurface: "#075985",
+        cardPrimary: "#0369a1",
+        cardSecondary: "#0284c7",
+        modalSurface: "#0ea5e9",
+        inputSurface: "#075985",
+        border: "#0ea5e9",
+        text: "#f0f9ff",
+        textSecondary: "#bae6fd",
+        primary: "#0ea5e9",
         secondary: "#0369a1",
-        accent: "#22d3ee",
-        neutral: "#075985",
-        textSecondary: "#bae6fd"
+        accent: "#38bdf8",
+        neutral: "#7dd3fc",
+        shadowSm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        shadowMd: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        shadowLg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        radius: "12px",
+        background: "#0c4a6e",
+        surface: "#075985",
+        card: "#0369a1"
     }
-
 };

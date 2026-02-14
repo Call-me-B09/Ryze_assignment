@@ -10,6 +10,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Table } from '../components/ui/Table';
 import { Modal } from '../components/ui/Modal';
+import { Select } from '../components/ui/Select';
+import { Option } from '../components/ui/Option';
 import { LayoutInterpreter } from '../components/ui/Layout';
 import { themes } from '../theme';
 
@@ -20,23 +22,18 @@ const transformCodeForLivePreview = (code) => {
     let processedCode = code.replace(/import\s+.*?;/gs, '');
 
     // 2. Check if the code exports a component or is just raw JSX
-    // If it contains "export default function", it's a component we can name.
-
     let componentName = null;
 
-    // Case: export default function Name() {}
     if (processedCode.match(/export\s+default\s+function\s+(\w+)/)) {
         processedCode = processedCode.replace(/export\s+default\s+function\s+(\w+)/, (match, name) => {
             componentName = name;
             return `const ${name} = function ${name}`;
         });
     }
-    // Case: export default function() {} -> Name it GeneratedComponent
     else if (processedCode.match(/export\s+default\s+function\s*\(/)) {
         processedCode = processedCode.replace(/export\s+default\s+function/, 'const GeneratedComponent = function');
         componentName = 'GeneratedComponent';
     }
-    // Case: export default Name
     else if (processedCode.match(/export\s+default\s+(\w+)/)) {
         const match = processedCode.match(/export\s+default\s+(\w+)/);
         if (match) {
@@ -44,9 +41,7 @@ const transformCodeForLivePreview = (code) => {
             processedCode = processedCode.replace(/export\s+default\s+(\w+);?/, '');
         }
     }
-    // Case: function Name() {} (Top level function, assume it's the App)
     else if (processedCode.match(/function\s+(\w+)/)) {
-        // Find the LAST defined function as the likely export
         const matches = [...processedCode.matchAll(/function\s+(\w+)/g)];
         if (matches.length > 0) {
             componentName = matches[matches.length - 1][1];
@@ -55,30 +50,27 @@ const transformCodeForLivePreview = (code) => {
 
     // 3. Construct the render call
     if (componentName) {
-        // It's a named component, render it wrapped in LayoutInterpreter
-        // We will inject the theme prop via LayoutInterpreter in the scope, so here we just return the component.
-        // Wait, LayoutInterpreter needs to receive the theme from the PreviewPanel state.
-        // We can pass the theme via the scope's LayoutInterpreter wrapper.
-        // So here we stick to rendering it.
-        processedCode += `\nrender(<LayoutInterpreter><${componentName} /></LayoutInterpreter>);`;
+        // RENDER DIRECTLY - Allow component to manage its own state/theme
+        processedCode += `\nrender(<${componentName} />);`;
     } else {
-        // It's likely raw JSX (e.g. <>...</> or list of components)
-        // Wrap the ENTIRE code in LayoutInterpreter and render it
-        processedCode = `render(<LayoutInterpreter><>${processedCode}</></LayoutInterpreter>);`;
+        // Raw JSX - Wrap in LayoutInterpreter
+        processedCode = `render(<LayoutInterpreter><>{code}</></LayoutInterpreter>);`;
     }
 
     return processedCode;
 };
 
 export function PreviewPanel({ code }) {
-    const [theme, setTheme] = useState("dark"); // Default theme
+    const [theme, setTheme] = useState("dark"); // Outer preview theme (mostly unused now if inner has state)
 
     // HOC to inject current theme into LayoutInterpreter to enforce global preview theme
     const ThemedLayout = (props) => {
         return <LayoutInterpreter {...props} theme={theme} />;
     };
 
+    // Inject previewTheme into scope to allow external control
     const scope = useMemo(() => ({
+        ...Lucide, // Icons as base, but UI components overwrite if name conflicts
         Navbar,
         Sidebar,
         Card,
@@ -86,8 +78,9 @@ export function PreviewPanel({ code }) {
         Input,
         Table,
         Modal,
-        LayoutInterpreter: ThemedLayout, // Override with themed HOC
-        ...Lucide,
+        Select,
+        Option,
+        LayoutInterpreter: ThemedLayout,
         React,
         useState: React.useState,
         useEffect: React.useEffect,
@@ -96,10 +89,25 @@ export function PreviewPanel({ code }) {
         useCallback: React.useCallback,
         useMemo: React.useMemo,
         useRef: React.useRef,
-        themes
-    }), [theme]); // Re-create scope when theme changes to update ThemedLayout closure
+        themes,
+        previewTheme: theme // Inject current outer theme
+    }), [theme]);
 
-    const transformedCode = useMemo(() => transformCodeForLivePreview(code), [code]);
+    // Transform code to use the injected previewTheme logic
+    const transformedCode = useMemo(() => {
+        let processed = transformCodeForLivePreview(code);
+
+        // HACK: Replace hardcoded useState("dark") with useState(previewTheme) 
+        // to allow the outer switcher to drive the inner state.
+        // We match "dark", "light", or "ocean" to be safe.
+        processed = processed.replace(
+            /useState\s*\(\s*["'](dark|light|ocean)["']\s*\)/g,
+            'useState(previewTheme)'
+        );
+        return processed;
+    }, [code]);
+
+    const isFullApp = code && code.includes('export default function App');
 
     return (
         <div className="flex flex-col h-full bg-white" style={{ transform: 'translate(0)' }}>

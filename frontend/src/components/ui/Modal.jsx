@@ -20,7 +20,7 @@ export function Modal({ isOpen, onClose, title, children, theme = "dark" }) {
             backdropFilter: "blur(4px)"
         }}>
             <div style={{
-                background: t.surface,
+                background: t.modalSurface, // Updated to specific modal surface
                 color: t.text,
                 padding: "24px",
                 borderRadius: "16px",

@@ -13,17 +13,14 @@ export function AppShell({ navbar, sidebar, content, modals, theme = "dark" }) {
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            background: t.background,
+            background: t.appBackground, // Updated token
             color: t.text,
             overflow: "hidden"
         }}>
+            {/* Navbar Container - Component handles styling */}
             <div style={{
                 width: "100%",
-                borderBottom: `1px solid ${t.border}`,
-                padding: "12px 24px",
-                boxSizing: "border-box",
-                flexShrink: 0,
-                background: t.background
+                flexShrink: 0
             }}>
                 {navbar}
             </div>
@@ -33,13 +30,13 @@ export function AppShell({ navbar, sidebar, content, modals, theme = "dark" }) {
                 display: "flex",
                 overflow: "hidden"
             }}>
+                {/* Sidebar Container - Component handles styling */}
                 <div style={{
-                    width: "240px",
-                    borderRight: `1px solid ${t.border}`,
-                    padding: "16px",
                     flexShrink: 0,
                     overflowY: "auto",
-                    background: t.background
+                    // Sidebar component defaults to fixed width, or we can enforce it here if needed.
+                    // But strictly, Sidebar.jsx handles it.
+                    height: "100%"
                 }}>
                     {sidebar}
                 </div>
@@ -51,11 +48,11 @@ export function AppShell({ navbar, sidebar, content, modals, theme = "dark" }) {
                     padding: "40px",
                     overflowY: "auto",
                     position: "relative",
-                    background: t.background
+                    background: t.appBackground // Updated token
                 }}>
                     <div style={{
                         width: "100%",
-                        maxWidth: "1100px"
+                        maxWidth: "1200px"
                     }}>
                         {content}
                     </div>
@@ -75,17 +72,13 @@ export function WebsiteShell({ navbar, content, modals, theme = "dark" }) {
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            background: t.background,
+            background: t.appBackground, // Updated token
             color: t.text,
             overflow: "hidden"
         }}>
             <div style={{
                 width: "100%",
-                borderBottom: `1px solid ${t.border}`,
-                padding: "12px 24px",
-                boxSizing: "border-box",
-                flexShrink: 0,
-                background: t.background
+                flexShrink: 0
             }}>
                 {navbar}
             </div>
@@ -97,11 +90,11 @@ export function WebsiteShell({ navbar, content, modals, theme = "dark" }) {
                 padding: "40px",
                 overflowY: "auto",
                 position: "relative",
-                background: t.background
+                background: t.appBackground // Updated token
             }}>
                 <div style={{
                     width: "100%",
-                    maxWidth: "1100px"
+                    maxWidth: "1200px"
                 }}>
                     {content}
                 </div>
@@ -111,26 +104,41 @@ export function WebsiteShell({ navbar, content, modals, theme = "dark" }) {
     );
 }
 
-// Shell 3: Centered Layout (Login / Simple Page)
+// Shell 3: Centered Layout (Universal Container)
 export function CenteredShell({ content, modals, theme = "dark" }) {
     const t = themes[theme] || themes.dark;
 
     return (
         <div style={{
             height: "100%",
+            width: "100%",
             display: "flex",
             justifyContent: "center",
-            alignItems: "center",
-            background: t.background,
+            alignItems: "center", // Center vertically? Or top align? Vertically centering is nice.
+            background: t.appBackground, // Updated token
             color: t.text,
-            position: "relative"
+            position: "relative",
+            padding: "40px",
+            boxSizing: "border-box",
+            overflow: "hidden"
         }}>
             <div style={{
                 width: "100%",
-                maxWidth: "400px",
-                padding: "20px"
+                maxWidth: "1400px", // Increased from 400px for full app support
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden" // Prevent inner scroll double
             }}>
-                {content}
+                {/* Scrollable content area inside the centered constraint */}
+                <div style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column"
+                }}>
+                    {content}
+                </div>
             </div>
             {modals}
         </div>
@@ -159,11 +167,11 @@ export function LayoutInterpreter({ children, theme = "dark" }) {
         const themedChild = React.cloneElement(child, { theme });
 
         // Strict Type Checking
-        if (child.type === Navbar) {
+        if (child.type.name === "Navbar" || child.type.displayName === "Navbar") { // Fix type check
             navbar = themedChild;
-        } else if (child.type === Sidebar) {
+        } else if (child.type.name === "Sidebar" || child.type.displayName === "Sidebar") {
             sidebar = themedChild;
-        } else if (child.type === Modal) {
+        } else if (child.type.name === "Modal" || child.type.displayName === "Modal") {
             modals.push(themedChild);
         } else {
             // Fallback for detection by name if type check fails
@@ -171,17 +179,12 @@ export function LayoutInterpreter({ children, theme = "dark" }) {
             if (typeName.includes("Navbar")) navbar = themedChild;
             else if (typeName.includes("Sidebar")) sidebar = themedChild;
             else if (typeName.includes("Modal")) modals.push(themedChild);
-            else content.push(themedChild); // Should we theme generic content? Maybe not directly.
+            else content.push(themedChild);
         }
     });
 
     // Content also needs to receive theme if they are our components
     const themedContent = content.map(child => {
-        // Check if it's one of our UI components by checking display name or type
-        if (child.type === Navbar || child.type === Sidebar || child.type === Modal) return child; // Already handled
-        // We should try to pass theme to everything just in case? 
-        // Safest is to rely on the generator passing it or us injecting it here.
-        // Let's inject it if it's a valid element.
         if (React.isValidElement(child)) {
             return React.cloneElement(child, { theme });
         }
