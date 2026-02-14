@@ -112,16 +112,6 @@ export default function LandingPage({ onStart }) {
 
                 </motion.div>
 
-                {/* Footer Text */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2, duration: 1 }}
-                    className="absolute bottom-8 text-sm text-zinc-500 font-medium tracking-widest uppercase opacity-50"
-                >
-                    Powered by Antigravity
-                </motion.div>
-
             </div>
 
             <style jsx>{`
