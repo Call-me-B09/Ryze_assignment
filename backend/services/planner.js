@@ -4,26 +4,46 @@ require('dotenv').config();
 const planner = async (prompt, previousCode = null) => {
   const systemInstruction = previousCode
     ? `
-You are an expert UI/UX Architect. Your job is to analyze the user request and UPDATE the existing React application structure.
+You are an expert UI/UX Architect specializing in incremental updates.
+Your job is to analyze the user request and the existing code to create an **EDIT PLAN**.
 
-### Objectives
-1. **Analyze Changes**: Compare the User Prompt with the Previous Version. Identify what needs to be added, removed, or modified.
-2. **Preserve Structure**: Keep the existing layout (Navbar/Sidebar/Main Card) unless explicitly asked to change it.
-3. **Plan Update**: Output a JSON plan that reflects the *new* state of the application after changes.
+### EDIT TYPES
+1. **ADD**: Insert a new component (e.g., Modal, Button, Section).
+2. **MODIFY**: Change properties, text, or style of an existing component.
+3. **REMOVE**: Delete a component.
+4. **REPLACE**: Swap one component for another.
+5. **REORDER**: Move components.
 
-### Rules
-1. Return **ONLY** a JSON object (no markdown).
-2. Structure:
-   {
-     "layout": "description of existing layout + changes",
-     "components": [
-       { "name": "Sidebar", "description": "Navigation links..." },
-       { "name": "Card", "description": "Main container..." },
-       // List ALL components needed for the new version
-     ],
-     "change_strategy": "Briefly explain what is being changed (e.g. 'Adding a new button to the main card')"
-   }
-3. DO NOT suggest standard HTML elements (div, span, etc) or CSS styling. Focus on component composition and hierarchy.
+### OBJECTIVES
+1. Analyze user prompt vs existing code.
+2. Identify the *minimal* set of actions needed.
+3. Output a structured JSON plan.
+
+### JSON STRUCTURE (Strict)
+Return a single JSON object with an "edits" array.
+{
+  "edits": [
+    {
+      "action": "ADD",
+      "target": "ParentComponentName or Description",
+      "component": "ComponentName",
+      "props": { "propName": "propValue" },
+      "location": "description of where to add"
+    },
+    {
+      "action": "MODIFY",
+      "target": "Button containing text 'Login'",
+      "change": "text", 
+      "newValue": "Sign In"
+    }
+  ],
+  "summary": "Brief explanation of changes"
+}
+
+### RULES
+1. Do NOT generate a full UI tree. Only list changes.
+2. Be specific about targets (e.g., "Card with title 'Welcome'").
+3. Use ONLY allowed components: Navbar, Sidebar, Card, Input, Button, Table, Modal.
 `
     : `
 You are an expert UI/UX Architect. Your job is to analyze the user request and create a detailed structure for a React application using ONLY the allowed component library.
@@ -52,7 +72,7 @@ You are an expert UI/UX Architect. Your job is to analyze the user request and c
 `;
 
   const fullPrompt = previousCode
-    ? `User Prompt: ${prompt}\n\nPrevious Version Code:\n${previousCode}`
+    ? `User Prompt: ${prompt}\n\nExisting Code:\n${previousCode}`
     : `User Prompt: ${prompt}`;
 
   const promptParts = [{ text: systemInstruction + "\n\n" + fullPrompt }];
@@ -62,10 +82,89 @@ You are an expert UI/UX Architect. Your job is to analyze the user request and c
   const response = result.response;
   let text = response.text();
 
-  // Clean up potential markdown code blocks
-  text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+  const cleanJson = (str) => {
+    // 1. Remove markdown code blocks (optional, but helps distinct blocks)
+    str = str.replace(/```json/g, "").replace(/```/g, "").trim();
 
-  return JSON.parse(text);
+    // 2. Find the first '{' or '['
+    const firstOpenBrace = str.indexOf('{');
+    const firstOpenBracket = str.indexOf('[');
+
+    let startIndex = -1;
+    let endChar = '';
+
+    if (firstOpenBrace !== -1 && (firstOpenBracket === -1 || firstOpenBrace < firstOpenBracket)) {
+      startIndex = firstOpenBrace;
+      endChar = '}';
+    } else if (firstOpenBracket !== -1) {
+      startIndex = firstOpenBracket;
+      endChar = ']';
+    }
+
+    if (startIndex === -1) return str; // No JSON found
+
+    // 3. Robust extraction using brace counting
+    let openCount = 0;
+    let endIndex = -1;
+    let inString = false;
+    let escape = false;
+
+    for (let i = startIndex; i < str.length; i++) {
+      const char = str[i];
+
+      if (escape) {
+        escape = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escape = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (!inString) {
+        if (char === '{' || char === '[') {
+          openCount++;
+        } else if (char === '}' || char === ']') {
+          openCount--;
+          if (openCount === 0) {
+            endIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    if (endIndex !== -1) {
+      str = str.substring(startIndex, endIndex + 1);
+    }
+
+    // 4. Cleanup text inside the extracted block
+    // Remove single-line comments (careful not to remove URLs)
+    // str = str.replace(/\/\/.*$/gm, ""); // Risky if // is in string
+
+    // Remove trailing commas (simple regex, can be risky but usually fine)
+    str = str.replace(/,(\s*[}\]])/g, '$1');
+
+    return str;
+  };
+
+  const cleanedText = cleanJson(text);
+
+  try {
+    return JSON.parse(cleanedText);
+  } catch (error) {
+    console.error("Failed to parse JSON Plan:", error);
+    console.error("Raw Text:", text);
+    console.error("Cleaned Text:", cleanedText);
+    // Fallback: Return a simple error plan logic or throw
+    throw new Error("Invalid structure returned by Planner Agent. Please try again.");
+  }
 };
 
 module.exports = planner;

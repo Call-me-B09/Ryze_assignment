@@ -30,7 +30,7 @@ const generateContentWithGroq = async (promptParts) => {
                     content: content,
                 },
             ],
-            model: "llama-3.3-70b-versatile",
+            model: "llama-3.1-8b-instant",
             temperature: 0.7,
             max_tokens: 8000,
         });
@@ -49,29 +49,13 @@ const generateContentWithGroq = async (promptParts) => {
 };
 
 const generateContentWithRetry = async (promptParts, retries = 0) => {
+    // DIRECT OVERRIDE: Use Groq API only (User Request)
     try {
-        const result = await model.generateContent({
-            contents: [{ role: "user", parts: promptParts }]
-        });
-        return result;
+        console.log("Direct Mode: Using Groq API (llama-3.3-70b-versatile)...");
+        return await generateContentWithGroq(promptParts);
     } catch (error) {
-        if (
-            (error.status === 503 || error.status === 429 || error.message.includes('503') || error.message.includes('429')) &&
-            retries < MAX_RETRIES
-        ) {
-            const backoffTime = INITIAL_BACKOFF_MS * Math.pow(2, retries);
-            console.warn(`Gemini API Error (${error.status || error.message}). Retrying in ${backoffTime}ms... (Attempt ${retries + 1}/${MAX_RETRIES})`);
-            await delay(backoffTime);
-            return generateContentWithRetry(promptParts, retries + 1);
-        } else {
-            console.error(`Gemini API Request Failed after ${retries} retries. Switching to fallback...`);
-            try {
-                return await generateContentWithGroq(promptParts);
-            } catch (fallbackError) {
-                console.error("All API attempts failed (Gemini + Groq).");
-                throw error; // Throw original error to preserve context, or fallbackError
-            }
-        }
+        console.error("Groq API Request Failed:", error);
+        throw error;
     }
 };
 

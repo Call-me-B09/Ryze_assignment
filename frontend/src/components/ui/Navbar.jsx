@@ -1,16 +1,34 @@
 import React from 'react';
+import { themes } from '../../theme';
 
-export function Navbar({ logo = "App", links = ["Home", "About", "Contact"], theme }) {
-    return (
-        <nav className={`w-full h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between px-6 ${theme === 'dark' ? 'dark' : ''}`}>
-            <div className="font-bold text-xl text-gray-900 dark:text-gray-100">{logo}</div>
-            <div className="flex gap-6">
-                {links.map((link) => (
-                    <a key={link} href="#" className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium">
-                        {link}
-                    </a>
-                ))}
+export function Navbar({ children, logo = "App", theme = "dark" }) {
+    const t = themes[theme] || themes.dark;
+
+    // If children are provided, use them. Otherwise, render default structure.
+    const content = children || (
+        <>
+            <div style={{ fontWeight: "bold", fontSize: "20px", color: t.text }}>{logo}</div>
+            <div style={{ display: "flex", gap: "24px" }}>
+                <a href="#" style={{ color: t.textSecondary, textDecoration: "none", fontSize: "14px" }}>Home</a>
+                <a href="#" style={{ color: t.textSecondary, textDecoration: "none", fontSize: "14px" }}>About</a>
+                <a href="#" style={{ color: t.textSecondary, textDecoration: "none", fontSize: "14px" }}>Contact</a>
             </div>
-        </nav>
+        </>
+    );
+
+    return (
+        <div style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "16px 24px",
+            borderBottom: `1px solid ${t.border}`,
+            background: t.background,
+            boxSizing: "border-box",
+            color: t.text
+        }}>
+            {content}
+        </div>
     );
 }

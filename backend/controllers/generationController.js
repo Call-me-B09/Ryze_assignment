@@ -24,7 +24,7 @@ exports.generate = async (req, res) => {
         const plan = await planner(prompt, previousCode);
 
         // 2. Generator Agent
-        let code = await generator(plan, previousCode);
+        let code = await generator(plan, previousCode, prompt);
 
         // Safety Check: Passed (We now allow standard HTML/Tailwind)
         // const forbiddenTags = ['<div', '<span', '<h1', '<p', 'className'];

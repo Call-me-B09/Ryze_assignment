@@ -7,10 +7,11 @@ You are a UI Explainer Agent. Your job is to explain the generated UI in plain E
 
 Input:
 - React Code
-- JSON Plan
+- JSON Plan (can be a full layout plan OR an edit plan with an "edits" array)
 
 Output:
-- A concise paragraph explaining what was built and why. usage of specific components.
+- If NEW GENERATION: A concise paragraph explaining what was built and why.
+- If EDIT: A concise paragraph explaining WHAT CHANGED based on the "edits" array (e.g., "Added a Settings modal..."). Do not describe unchanged parts.
 `;
 
     const promptParts = [{ text: systemInstruction + "\n\nCode:\n" + code + "\n\nPlan:\n" + JSON.stringify(plan) }];

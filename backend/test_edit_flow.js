@@ -14,9 +14,8 @@ const testEditFlow = async () => {
         const plan1 = await planner(initPrompt, null);
         console.log("Plan 1 generated.");
 
-        const code1 = await generator(plan1, null);
+        const code1 = await generator(plan1, null, initPrompt);
         console.log("Code 1 generated (Length: " + code1.length + ")");
-        console.log("Code 1 Preview (Snippet):\n", code1.substring(0, 200));
 
         // Step 2: Edit Request
         console.log("\n--- Step 2: Requesting Edit (Change Welcome to 'Hello User') ---");
@@ -25,7 +24,7 @@ const testEditFlow = async () => {
         const plan2 = await planner(editPrompt, code1);
         console.log("Plan 2 generated.");
 
-        const code2 = await generator(plan2, code1);
+        const code2 = await generator(plan2, code1, editPrompt);
         console.log("Code 2 generated (Length: " + code2.length + ")");
 
         // Verification

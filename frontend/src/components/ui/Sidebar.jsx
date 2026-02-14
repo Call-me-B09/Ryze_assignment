@@ -1,13 +1,42 @@
 import React from 'react';
+import { themes } from '../../theme';
 
-export function Sidebar({ items = ["Dashboard", "Settings", "Profile"], theme }) {
-    return (
-        <aside className={`w-64 h-full border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-4 flex flex-col gap-2 ${theme === 'dark' ? 'dark' : ''}`}>
-            {items.map((item) => (
-                <button key={item} className="w-full text-left px-4 py-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+export function Sidebar({ children, items, theme = "dark" }) {
+    const t = themes[theme] || themes.dark;
+
+    // If children are provided, use them. Otherwise, render default structure.
+    const content = children || (
+        <>
+            {(items || ["Dashboard", "Settings", "Profile"]).map((item) => (
+                <div key={item} style={{
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    color: t.textSecondary,
+                    cursor: "pointer",
+                    fontSize: "14px"
+                }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = t.surface; e.currentTarget.style.color = t.text; }}
+                    onMouseOut={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = t.textSecondary; }}
+                >
                     {item}
-                </button>
+                </div>
             ))}
-        </aside>
+        </>
+    );
+
+    return (
+        <div style={{
+            width: "240px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            padding: "16px",
+            boxSizing: "border-box",
+            background: t.background,
+            height: "100%",
+            borderRight: `1px solid ${t.border}`
+        }}>
+            {content}
+        </div>
     );
 }

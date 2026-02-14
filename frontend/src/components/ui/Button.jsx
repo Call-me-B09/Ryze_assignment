@@ -1,19 +1,39 @@
 import React from 'react';
+import { themes } from '../../theme';
 
-export function Button({ children, onClick, variant = 'primary', className = '' }) {
-    const baseStyles = "px-4 py-2 rounded-lg font-medium transition-colors duration-200";
-    const variants = {
-        primary: "bg-blue-600 hover:bg-blue-700 text-white",
-        secondary: "bg-gray-700 hover:bg-gray-600 text-gray-200",
-        ghost: "bg-transparent hover:bg-gray-800 text-gray-400 hover:text-white"
+export function Button({ children, label, onClick, variant = 'primary', theme = 'dark', className = '' }) {
+    const t = themes[theme] || themes.dark;
+
+    // Map variant to theme color
+    const bgColor = variant === 'primary' ? t.primary :
+        variant === 'secondary' ? t.secondary : 'transparent';
+
+    // Ghost variant handling
+    const textColor = variant === 'ghost' ? t.textSecondary :
+        variant === 'secondary' ? t.text : '#ffffff';
+
+    const header = variant === "primary" ? t.primary : t.secondary;
+
+    const styles = {
+        background: bgColor,
+        color: textColor,
+        border: "none",
+        padding: "10px 16px",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontWeight: "500",
+        transition: "opacity 0.2s",
+        fontSize: "14px"
     };
 
     return (
         <button
             onClick={onClick}
-            className={`${baseStyles} ${variants[variant]} ${className}`}
+            style={styles}
+            onMouseOver={(e) => e.currentTarget.style.opacity = "0.9"}
+            onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
         >
-            {children}
+            {children || label || 'Button'}
         </button>
     );
 }
